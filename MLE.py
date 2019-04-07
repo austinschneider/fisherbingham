@@ -1,7 +1,9 @@
 import numpy as np
 import scipy
 import scipy.linalg
+import scipy.optimize
 import fb
+import expm
 
 def FBLLH(theta, gamma, O, A, B, n, method='hg', withvol=False):
     #p = (len(parameters) + 1) / 2
@@ -46,7 +48,7 @@ def orthogonal_matrix(x):
     q = np.identity(len(x)) - 2.0*a.dot(a.T)/float(a.T.dot(a))
     return q
 
-def grad_mle_update(theta, gamma, O, A, B, n, withvol=False, min_step=1e-3):
+def grad_mle_update(theta, gamma, O, A, B, n, method='hg', withvol=False, min_step=1e-3):
     p = len(theta)
 
     # get the initial llh and gradient
@@ -73,8 +75,31 @@ def grad_mle_update(theta, gamma, O, A, B, n, withvol=False, min_step=1e-3):
 
     return new_theta, new_gamma, new_l, new_grad, delta
 
-def grad_mle_orth_update():
-    pass
+def grad_mle_orth_update(theta, gamma, O, A, B, n, method='hg', withvol=False, tol=1e-3):
+    m_theta = np.diag(theta)
+    AA = m_theta.dot(O).dot(A).dot(O.T).dot(m_theta) + gamma.dot(B.T).dot(O.T)
+    vhat = AA - AA.T
+    cc = -np.sum(inp.diag(A.dot(O.T).dot(m_theta).dot(O) + gamma.dot(B.T).dot(O.T)))
+    l, grad = FBLLH(theta, gamma, O, A, B, n, method=method, withvol=withvol)
+    delta = np.sign(np.sum(AA.dot(vhat)))
+    new_O = expm.expm(vhat*delta).dot(O)
+    new_cc = -np.sum(np.diag(A.dot(new_O.T).dot(m_theta).dot(new_O) + gamma.dot(B.T).dot(new_O.T)))
+    new_l, new_grad = FBLLH(theta, gamma, new_O, A, B, n, method=method, withvol=withvol)
+
+    f0 = lambda t0: -FBLLH(theta, gamma, expm.expm(vhat*t0).dot(O), A, B, n, method=method, withvol=withvol)[0]
+
+    res = scipy.optimize.minimize_scalar(f0, bound=[-100.,100.])
+
+    new_O_1 = expm.expm(vhat*res.fun).dot(O)
+
+    new_l_1, new_grad_1 = FBLLH(theta, gamma, new_O_1, A, B, n, method=method, withvol=withvol)
+
+    if new_l > new_l_1:
+        new_O = new_O_1
+    else:
+        print "vhat is too small?"
+
+    return new_O, new_l_1, new_grad_1, AA
 
 def grad_mle_update_optim_sqrt():
     pass
@@ -107,7 +132,7 @@ def MLE(A, B, n, theta=None, gamma=None, O=None, method='hg', withvol=False, max
         b = scipy.linalg.norm(gamma - new_gamma, ord=1)
         theta, gamma, l, grad, delta = new_theta, new_gamma, new_l, new_grad, new_delta
 
-        O, _ = grad_mle_orth_update(theta, gamma, O, A, B, n)
+        O, _, _, _ = grad_mle_orth_update(theta, gamma, O, A, B, n)
         new_theta, new_gamma, new_l, new_grad, new_delta = grad_mle_update_optim_sqrt(theta, gamma, O, A, B, n, withvol=withvol)
 
         i += 1
