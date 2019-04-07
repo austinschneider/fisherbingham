@@ -101,8 +101,38 @@ def grad_mle_orth_update(theta, gamma, O, A, B, n, method='hg', withvol=False, t
 
     return new_O, new_l_1, new_grad_1, AA
 
-def grad_mle_update_optim_sqrt():
-    pass
+def grad_mle_update_optim_sqrt(theta, gamma, O, A, B, n, method='hg', withvol=False, dmax=1.0):
+    p = len(theta)
+    l, grad = FBLLH(theta, gamma, O, A, B, n, method=method, withvol=withvol)
+    x = np.sqrt(theta)
+    y = np.sqrt(gamma)
+    delta = 10.0
+    new_x = x*(1.0+delta * grad[:p])
+    new_y = y*(1.0+delta * grad[p:p*2])
+
+    # one of the thetas must be zero
+    # assuming it's theta[0], let's fix that component of the gradient to zero
+    new_x[0] = 0
+    grad[0] = 0
+
+    def f(dl):
+        x = np.sqrt(theta)
+        y = np.sqrt(gamma)
+        new_x = x*(1.0+dl * grad[:p])
+        new_y = y*(1.0+dl * grad[p:p*2])
+        return -FBLLH(new_x**2.0, new_x**2.0, O, A, B, n, method=method, withvol=withvol)[0]
+
+    res = scipy.optimize.minimize_scalar(f, bound=[0.0, dmax])
+
+    delta = res.fun
+    new_x = x*(1.0+delta * grad[:p])
+    new_y = y*(1.0+delta * grad[p:p*2])
+    new_theta = new_x**2.0
+    new_gamma = new_y**2.0
+
+    new_l, new_grad = FBLLH(new_theta, new_gamma, O, A, B, n, method=method, withvol=withvol)[0]
+
+    return new_theta, new_gamma, new_l, new_grad, delta
 
 def MLE(A, B, n, theta=None, gamma=None, O=None, method='hg', withvol=False, max_iter=200):
 
