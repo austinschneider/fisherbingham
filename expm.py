@@ -226,11 +226,6 @@ def expm_Higham08(A, balancing=True):
 ##-----------------STEP 4 REVERSE BALANCING---------------------------------
     if balancing:##	 reverse the balancing
         d = baS_scale
-        print 'X:', X
-        print 'd:', d
-        print 'n:', n
-        print 'np.tile(d,n)', np.tile(d,n)
-        print 'np.repeat(1.0/d,n)', np.repeat(1.0/d,n)
         X = X * (np.tile(d,n) * np.repeat(1.0/d, n)).reshape(tuple(reversed(X.shape))).T
 
         ## apply inverse permutation (of rows and columns):
