@@ -258,12 +258,18 @@ def hg_mod(th0, G0, th1, dG_fun, max_step=0.01, ns=None, s=None, show_trace=Fals
         trace = []
         while integrator.t < t_max:
             trace.append((integrator.t, integrator.y))
-            integrator.step()
+            try:
+                integrator.step()
+            except:
+                break
         trace.append((integrator.t, integrator.y))
     else:
         trace = None
         while integrator.t < t_max:
-            integrator.step()
+            try:
+                integrator.step()
+            except:
+                break
     return integrator.y, trace
 
 # Evaluation of FB normalization constant by HGM
@@ -299,7 +305,7 @@ def hgm_FB_2(alpha, ns=None, withvol=True):
     return res
 
 # Implement the saddle point approximation for FB8
-def saddleaprox_FB_revised(L, M=None, dub=3, order=3):
+def saddleapprox_FB_revised(L, M=None, dub=3, order=3):
     #M=L*0
     if M is None:
         M = np.zeros(len(L))
@@ -429,7 +435,7 @@ def SPA(alpha, ns=None, withvol=True):
     #print 'coef=', coef
 
     #return(saddleaprox.FB.revised(theta+1,mu,dub=1,order=3)*exp(1) / coef)
-    return saddleaprox_FB_revised(theta + 1.0, mu, dub=1, order=3) * np.exp(1.0) / coef
+    return saddleapprox_FB_revised(theta + 1.0, mu, dub=1, order=3) * np.exp(1.0) / coef
 
 
 def test():
@@ -461,5 +467,5 @@ def test():
     print 'MC:', G3
     G4 = SPA(alpha2, ns2)
     print 'SPA:', G4
-
-test()
+if __name__ == '__main__':
+    test()
