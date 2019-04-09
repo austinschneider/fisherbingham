@@ -432,7 +432,7 @@ def saddleapprox_FB_revised(L, M=None, dub=3, order=3):
 
     def KM(t):
         #Y<-sum(-1/2*log(1-t/L)+M^2/(1-t/L)/L)
-        y = np.sum(-0.5*np.log(1.0-t/L) + M**2.0 / (L-t) / L)
+        y = np.sum(-0.5*np.log(1.0-t/L) + M**2.0 / (L-t))
         #print 't=', t, ', KM=', y
         return y
 
